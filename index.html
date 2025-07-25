@@ -17,94 +17,136 @@
   <canvas id="gameCanvas" width="1920" height="1080"></canvas>
 
   <script>
-    const canvas = document.getElementById("gameCanvas");
-    const ctx = canvas.getContext("2d");
+  const canvas = document.getElementById("gameCanvas");
+  const ctx = canvas.getContext("2d");
 
-    // MAP SETUP
-    const map = {
-      width: 3000,
-      height: 3000,
-      tileSize: 60,
-      backgroundColor: "#228B22"
-    };
+  // MAP SETUP
+  const map = {
+    width: 3000,
+    height: 3000,
+    tileSize: 60,
+    backgroundColor: "#228B22"
+  };
 
-    const tileMap = [];
-    for (let y = 0; y < map.height / map.tileSize; y++) {
-      tileMap[y] = [];
-      for (let x = 0; x < map.width / map.tileSize; x++) {
-        tileMap[y][x] = {
-          type: "grass",
-          color: "#228B22"
-        };
+  const tileMap = [];
+  for (let y = 0; y < map.height / map.tileSize; y++) {
+    tileMap[y] = [];
+    for (let x = 0; x < map.width / map.tileSize; x++) {
+      tileMap[y][x] = {
+        type: "grass",
+        color: "#228B22"
+      };
+    }
+  }
+
+  // BUILDINGS
+  const buildings = [
+    { x: 800, y: 700, width: 200, height: 200, color: "#444" }, // Tilted Towah 1
+    { x: 1300, y: 1600, width: 150, height: 150, color: "#555" }, // Flex Quarry base
+    { x: 2200, y: 400, width: 250, height: 180, color: "#333" }, // Meme Mountain fort
+  ];
+
+  function drawMap(ctx, cameraX, cameraY) {
+    const tilesX = Math.ceil(canvas.width / map.tileSize) + 1;
+    const tilesY = Math.ceil(canvas.height / map.tileSize) + 1;
+    const startX = Math.floor(cameraX / map.tileSize);
+    const startY = Math.floor(cameraY / map.tileSize);
+
+    for (let y = 0; y < tilesY; y++) {
+      for (let x = 0; x < tilesX; x++) {
+        const tile = tileMap[startY + y]?.[startX + x];
+        if (!tile) continue;
+
+        ctx.fillStyle = tile.color;
+        ctx.fillRect(
+          x * map.tileSize - (cameraX % map.tileSize),
+          y * map.tileSize - (cameraY % map.tileSize),
+          map.tileSize,
+          map.tileSize
+        );
       }
     }
 
-    function drawMap(ctx, cameraX, cameraY) {
-      const tilesX = Math.ceil(canvas.width / map.tileSize) + 1;
-      const tilesY = Math.ceil(canvas.height / map.tileSize) + 1;
-
-      const startX = Math.floor(cameraX / map.tileSize);
-      const startY = Math.floor(cameraY / map.tileSize);
-
-      for (let y = 0; y < tilesY; y++) {
-        for (let x = 0; x < tilesX; x++) {
-          const tile = tileMap[startY + y]?.[startX + x];
-          if (!tile) continue;
-
-          ctx.fillStyle = tile.color;
-          ctx.fillRect(
-            x * map.tileSize - (cameraX % map.tileSize),
-            y * map.tileSize - (cameraY % map.tileSize),
-            map.tileSize,
-            map.tileSize
-          );
-        }
-      }
-    }
-
-    // PLAYER SETUP
-    const player = {
-      x: map.width / 2,
-      y: map.height / 2,
-      size: 40,
-      speed: 5,
-      color: "purple"
-    };
-
-    const keys = {};
-    window.addEventListener("keydown", e => keys[e.key] = true);
-    window.addEventListener("keyup", e => keys[e.key] = false);
-
-    function updatePlayer() {
-      if (keys["w"]) player.y -= player.speed;
-      if (keys["s"]) player.y += player.speed;
-      if (keys["a"]) player.x -= player.speed;
-      if (keys["d"]) player.x += player.speed;
-    }
-
-    function drawPlayer(cameraX, cameraY) {
-      ctx.fillStyle = player.color;
+    // Draw buildings
+    for (const b of buildings) {
+      ctx.fillStyle = b.color;
       ctx.fillRect(
-        player.x - cameraX,
-        player.y - cameraY,
-        player.size,
-        player.size
+        b.x - cameraX,
+        b.y - cameraY,
+        b.width,
+        b.height
       );
     }
+  }
 
-    // MAIN GAME LOOP
-    function gameLoop() {
-      const cameraX = player.x - canvas.width / 2 + player.size / 2;
-      const cameraY = player.y - canvas.height / 2 + player.size / 2;
+  // PLAYER
+  const player = {
+    x: map.width / 2,
+    y: map.height / 2,
+    size: 40,
+    speed: 5,
+    color: "purple"
+  };
 
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      drawMap(ctx, cameraX, cameraY);
-      updatePlayer();
-      drawPlayer(cameraX, cameraY);
-      requestAnimationFrame(gameLoop);
+  const keys = {};
+  window.addEventListener("keydown", e => keys[e.key] = true);
+  window.addEventListener("keyup", e => keys[e.key] = false);
+
+  function isColliding(rect1, rect2) {
+    return (
+      rect1.x < rect2.x + rect2.width &&
+      rect1.x + rect1.size > rect2.x &&
+      rect1.y < rect2.y + rect2.height &&
+      rect1.y + rect1.size > rect2.y
+    );
+  }
+
+  function updatePlayer() {
+    let newX = player.x;
+    let newY = player.y;
+
+    if (keys["w"]) newY -= player.speed;
+    if (keys["s"]) newY += player.speed;
+    if (keys["a"]) newX -= player.speed;
+    if (keys["d"]) newX += player.speed;
+
+    // Check building collision
+    let collision = false;
+    for (const b of buildings) {
+      if (isColliding({ x: newX, y: newY, size: player.size }, b)) {
+        collision = true;
+        break;
+      }
     }
 
-    gameLoop();
-  </script>
+    if (!collision) {
+      player.x = newX;
+      player.y = newY;
+    }
+  }
+
+  function drawPlayer(cameraX, cameraY) {
+    ctx.fillStyle = player.color;
+    ctx.fillRect(
+      player.x - cameraX,
+      player.y - cameraY,
+      player.size,
+      player.size
+    );
+  }
+
+  function gameLoop() {
+    const cameraX = player.x - canvas.width / 2 + player.size / 2;
+    const cameraY = player.y - canvas.height / 2 + player.size / 2;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawMap(ctx, cameraX, cameraY);
+    updatePlayer();
+    drawPlayer(cameraX, cameraY);
+    requestAnimationFrame(gameLoop);
+  }
+
+  gameLoop();
+</script>
 </body>
 </html>

@@ -1,4 +1,3 @@
-<!-- index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,7 +7,7 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
     canvas { 
       display: block; 
-      background: #87ceeb; /* Fortnite sky blue */
+      background: #87ceeb; 
       width: 100vw; 
       height: 100vh; 
     }
@@ -21,18 +20,58 @@
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
 
-    // Player object
+    // MAP SETUP
+    const map = {
+      width: 3000,
+      height: 3000,
+      tileSize: 60,
+      backgroundColor: "#228B22"
+    };
+
+    const tileMap = [];
+    for (let y = 0; y < map.height / map.tileSize; y++) {
+      tileMap[y] = [];
+      for (let x = 0; x < map.width / map.tileSize; x++) {
+        tileMap[y][x] = {
+          type: "grass",
+          color: "#228B22"
+        };
+      }
+    }
+
+    function drawMap(ctx, cameraX, cameraY) {
+      const tilesX = Math.ceil(canvas.width / map.tileSize) + 1;
+      const tilesY = Math.ceil(canvas.height / map.tileSize) + 1;
+
+      const startX = Math.floor(cameraX / map.tileSize);
+      const startY = Math.floor(cameraY / map.tileSize);
+
+      for (let y = 0; y < tilesY; y++) {
+        for (let x = 0; x < tilesX; x++) {
+          const tile = tileMap[startY + y]?.[startX + x];
+          if (!tile) continue;
+
+          ctx.fillStyle = tile.color;
+          ctx.fillRect(
+            x * map.tileSize - (cameraX % map.tileSize),
+            y * map.tileSize - (cameraY % map.tileSize),
+            map.tileSize,
+            map.tileSize
+          );
+        }
+      }
+    }
+
+    // PLAYER SETUP
     const player = {
-      x: canvas.width / 2,
-      y: canvas.height / 2,
+      x: map.width / 2,
+      y: map.height / 2,
       size: 40,
       speed: 5,
       color: "purple"
     };
 
-    // Keyboard input
     const keys = {};
-
     window.addEventListener("keydown", e => keys[e.key] = true);
     window.addEventListener("keyup", e => keys[e.key] = false);
 
@@ -43,19 +82,29 @@
       if (keys["d"]) player.x += player.speed;
     }
 
-    function drawPlayer() {
+    function drawPlayer(cameraX, cameraY) {
       ctx.fillStyle = player.color;
-      ctx.fillRect(player.x, player.y, player.size, player.size);
+      ctx.fillRect(
+        player.x - cameraX,
+        player.y - cameraY,
+        player.size,
+        player.size
+      );
     }
 
+    // MAIN GAME LOOP
     function gameLoop() {
+      const cameraX = player.x - canvas.width / 2 + player.size / 2;
+      const cameraY = player.y - canvas.height / 2 + player.size / 2;
+
       ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawMap(ctx, cameraX, cameraY);
       updatePlayer();
-      drawPlayer();
+      drawPlayer(cameraX, cameraY);
       requestAnimationFrame(gameLoop);
     }
 
-    gameLoop(); // start the game
+    gameLoop();
   </script>
 </body>
 </html>

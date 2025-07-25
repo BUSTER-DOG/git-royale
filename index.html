@@ -1,0 +1,61 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Flexnite: GitHub Royale</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    canvas { 
+      display: block; 
+      background: #87ceeb; /* Fortnite sky blue */
+      width: 100vw; 
+      height: 100vh; 
+    }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas" width="1920" height="1080"></canvas>
+
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    // Player object
+    const player = {
+      x: canvas.width / 2,
+      y: canvas.height / 2,
+      size: 40,
+      speed: 5,
+      color: "purple"
+    };
+
+    // Keyboard input
+    const keys = {};
+
+    window.addEventListener("keydown", e => keys[e.key] = true);
+    window.addEventListener("keyup", e => keys[e.key] = false);
+
+    function updatePlayer() {
+      if (keys["w"]) player.y -= player.speed;
+      if (keys["s"]) player.y += player.speed;
+      if (keys["a"]) player.x -= player.speed;
+      if (keys["d"]) player.x += player.speed;
+    }
+
+    function drawPlayer() {
+      ctx.fillStyle = player.color;
+      ctx.fillRect(player.x, player.y, player.size, player.size);
+    }
+
+    function gameLoop() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      updatePlayer();
+      drawPlayer();
+      requestAnimationFrame(gameLoop);
+    }
+
+    gameLoop(); // start the game
+  </script>
+</body>
+</html>
